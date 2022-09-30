@@ -1,0 +1,47 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 32
+    buildToolsVersion "28.0.3"
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 32
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+
+    lintOptions {
+        checkReleaseBuilds false
+        // Or, if you prefer, you can continue to check for errors in release builds,
+        // but continue the build even when errors are found:
+        abortOnError false
+    }
+    androidResources {
+        noCompress 'tflite'
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation project(":models")
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+
+    // Build off of nightly TensorFlow Lite
+    implementation 'org.tensorflow:tensorflow-lite:2.10.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.10.0'
+
+    implementation 'org.tensorflow:tensorflow-lite-support:0.4.2'
+
+    // Use local TensorFlow library
+    // implementation 'org.tensorflow:tensorflow-lite-local:0.0.0'
+}

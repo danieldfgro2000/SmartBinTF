@@ -1,0 +1,8 @@
+ps
+ldpe
+pet
+hdpe
+pvc
+pp
+nop
+other
