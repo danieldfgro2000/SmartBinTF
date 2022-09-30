@@ -51,6 +51,7 @@ import org.tensorflow.lite.examples.classification.env.Logger
 import org.tensorflow.lite.examples.classification.tflite.Classifier
 import timber.log.Timber
 import java.lang.Exception
+import java.util.*
 
 abstract class CameraActivity : AppCompatActivity(), OnImageAvailableListener, PreviewCallback,
     View.OnClickListener, AdapterView.OnItemSelectedListener {
@@ -118,22 +119,28 @@ abstract class CameraActivity : AppCompatActivity(), OnImageAvailableListener, P
         deviceSpinner = findViewById(R.id.device_spinner)
         bottomSheetLayout = findViewById(R.id.bottom_sheet_layout)
         gestureLayout = findViewById(R.id.gesture_layout)
-        sheetBehavior = BottomSheetBehavior.from(bottomSheetLayout)
+        bottomSheetLayout?.let {
+            sheetBehavior = BottomSheetBehavior.from(it)
+        }
+
         bottomSheetArrowImageView = findViewById(R.id.bottom_sheet_arrow)
-        val vto = gestureLayout.getViewTreeObserver()
-        vto.addOnGlobalLayoutListener(
-            object : OnGlobalLayoutListener {
-                override fun onGlobalLayout() {
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN) {
-                        gestureLayout.getViewTreeObserver().removeGlobalOnLayoutListener(this)
-                    } else {
-                        gestureLayout.getViewTreeObserver().removeOnGlobalLayoutListener(this)
+        gestureLayout?.let { it ->
+            val vto = it.viewTreeObserver
+
+            vto.addOnGlobalLayoutListener(
+                object : OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        it.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        val width = it.getMeasuredWidth();
+                        gestureLayout?.let { gesture ->
+                            val height = gesture.measuredHeight
+                            sheetBehavior!!.peekHeight = height
+                        }
                     }
-                    //                int width = bottomSheetLayout.getMeasuredWidth();
-                    val height = gestureLayout.getMeasuredHeight()
-                    sheetBehavior!!.peekHeight = height
-                }
-            })
+                })
+        }
+
+
         sheetBehavior!!.isHideable = false
         sheetBehavior!!.setBottomSheetCallback(
             object : BottomSheetCallback() {
@@ -141,15 +148,24 @@ abstract class CameraActivity : AppCompatActivity(), OnImageAvailableListener, P
                     when (newState) {
                         BottomSheetBehavior.STATE_HIDDEN -> {}
                         BottomSheetBehavior.STATE_EXPANDED -> {
-                            bottomSheetArrowImageView.setImageResource(R.drawable.icn_chevron_down)
+                            bottomSheetArrowImageView?.let {
+                                it.setImageResource(R.drawable.icn_chevron_down)
+                            }
+
                         }
                         BottomSheetBehavior.STATE_COLLAPSED -> {
-                            bottomSheetArrowImageView.setImageResource(R.drawable.icn_chevron_up)
+                            bottomSheetArrowImageView?.let {
+                                it.setImageResource(R.drawable.icn_chevron_up)
+                            }
+
                         }
                         BottomSheetBehavior.STATE_DRAGGING -> {}
-                        BottomSheetBehavior.STATE_SETTLING -> bottomSheetArrowImageView.setImageResource(
-                            R.drawable.icn_chevron_up
-                        )
+                        BottomSheetBehavior.STATE_SETTLING -> {
+                            bottomSheetArrowImageView?.let {
+                                it.setImageResource(R.drawable.icn_chevron_up)
+                            }
+
+                        }
                     }
                 }
 
@@ -166,13 +182,29 @@ abstract class CameraActivity : AppCompatActivity(), OnImageAvailableListener, P
         cameraResolutionTextView = findViewById(R.id.view_info)
         rotationTextView = findViewById(R.id.rotation_info)
         inferenceTimeTextView = findViewById(R.id.inference_info)
-        modelSpinner.setOnItemSelectedListener(this)
-        deviceSpinner.setOnItemSelectedListener(this)
-        plusImageView.setOnClickListener(this)
-        minusImageView.setOnClickListener(this)
-        model = Classifier.Model.valueOf(modelSpinner.getSelectedItem().toString().toUpperCase())
-        device = Classifier.Device.valueOf(deviceSpinner.getSelectedItem().toString())
-        numThreads = threadsTextView.getText().toString().trim { it <= ' ' }.toInt()
+        modelSpinner?.let {
+            it.onItemSelectedListener = this
+        }
+        deviceSpinner?.let {
+            it.onItemSelectedListener = this
+        }
+        plusImageView?.let {
+            it.setOnClickListener(this)
+        }
+        minusImageView?.let {
+            it.setOnClickListener(this)
+        }
+        modelSpinner?.let {
+            model = Classifier.Model.valueOf(it.selectedItem.toString()
+                .uppercase(Locale.getDefault()))
+        }
+        deviceSpinner?.let {
+            device = Classifier.Device.valueOf(it.selectedItem.toString())
+        }
+        threadsTextView?.let { threads ->
+            numThreads = threads.text.toString().trim { it <= ' ' }.toInt()
+        }
+
     }
 
     protected fun getRgbBytes(): IntArray? {
@@ -450,12 +482,12 @@ abstract class CameraActivity : AppCompatActivity(), OnImageAvailableListener, P
             if (recognition != null) {
                 if (recognition.title != null) recognitionTextView!!.text = recognition.title
                 if (recognition.confidence != null) {
-                    recognitionValueTextView!!.text =
-                        String.format("%.2f", 100 * recognition.confidence) + "%"
+                    (String.format("%.2f", 100 * recognition.confidence) + "%")
+                        .also { recognitionValueTextView!!.text = it }
                     if (recognition.confidence > 0.5) {
                         if (recognition.title == "pp" || recognition.title == "pvc" || recognition.title == "pet" || recognition.title == "other" || recognition.title == "ps" || recognition.title == "peld" || recognition.title == "pehd") {
 //       Log.e(TAG, ImageClassifier.plasticType);
-                            val intent = Intent(this@CameraActivity, PlasticTypeActivity)
+                            val intent = Intent(this@CameraActivity, PlasticTypeActivity::class.java)
                             val s = recognition.title
                             intent.putExtra("PLASTIC_TYPE", s)
                             startActivity(intent)
@@ -466,14 +498,14 @@ abstract class CameraActivity : AppCompatActivity(), OnImageAvailableListener, P
             val recognition1 = results[1]
             if (recognition1 != null) {
                 if (recognition1.title != null) recognition1TextView!!.text = recognition1.title
-                if (recognition1.confidence != null) recognition1ValueTextView!!.text =
-                    String.format("%.2f", 100 * recognition1.confidence) + "%"
+                if (recognition1.confidence != null) (String.format("%.2f", 100 * recognition1.confidence) + "%")
+                    .also { recognition1ValueTextView!!.text = it }
             }
             val recognition2 = results[2]
             if (recognition2 != null) {
                 if (recognition2.title != null) recognition2TextView!!.text = recognition2.title
-                if (recognition2.confidence != null) recognition2ValueTextView!!.text =
-                    String.format("%.2f", 100 * recognition2.confidence) + "%"
+                if (recognition2.confidence != null) (String.format("%.2f", 100 * recognition2.confidence) + "%")
+                    .also { recognition2ValueTextView!!.text = it }
             }
         }
     }
